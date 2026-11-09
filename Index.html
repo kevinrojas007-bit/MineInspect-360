@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MineInspect 360</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Plan: pitch en bandas horizontales (problema → solución → usuario → valor → impacto) y una consola de demo funcional al centro. Grafito + amarillo de seguridad minera. */
+  --bg:#f4f3ef; --surface:#ffffff; --ink:#1c1f22; --muted:#5d6268; --line:#d9d7d0;
+  --accent:#e8a400; --accent-ink:#1c1f22; --steel:#2f3a44;
+  --red:#c6362c; --amber:#d98a00; --green:#2f8a4b; --grey:#8a8f95;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181b; --surface:#1e2226; --ink:#eceae4; --muted:#a3a8ad; --line:#343a40;
+    --accent:#f2b51c; --accent-ink:#15181b; --steel:#c9d2da;
+    --red:#ef6a5f; --amber:#f0a832; --green:#5cc07a; --grey:#8d9298;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181b; --surface:#1e2226; --ink:#eceae4; --muted:#a3a8ad; --line:#343a40;
+  --accent:#f2b51c; --accent-ink:#15181b; --steel:#c9d2da;
+  --red:#ef6a5f; --amber:#f0a832; --green:#5cc07a; --grey:#8d9298;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+h1,h2,h3{font-family:var(--display);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:clamp(2.6rem,6vw,4.4rem);font-weight:700;text-transform:uppercase}
+h2{font-size:clamp(1.9rem,3.6vw,2.6rem);font-weight:700;text-transform:uppercase}
+h3{font-size:1.35rem;font-weight:600}
+p{margin:0;max-width:65ch}
+.wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+section{padding:56px 0;border-top:1px solid var(--line)}
+.tag{font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;align-items:center}
+.tag b{background:var(--accent);color:var(--accent-ink);padding:2px 7px;border-radius:3px;font-weight:500}
+.stack{display:grid;gap:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+
+/* hero */
+header.hero{padding:44px 0 48px;background:
+  repeating-linear-gradient(135deg,var(--accent) 0 14px,transparent 14px 28px) top/100% 8px no-repeat,var(--bg)}
+.hero .lead{font-size:1.2rem;margin-top:16px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:.85rem}
+
+/* problem flow */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;margin-top:24px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.flow div{padding:16px;border-right:1px solid var(--line);position:relative}
+.flow div:last-child{border-right:0}
+.flow .n{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.flow .loss{color:var(--red);font-weight:600;font-size:.88rem;margin-top:6px}
+
+/* demo console */
+.console{background:var(--surface);border:1px solid var(--line);border-radius:8px;margin-top:22px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+.roles{display:flex;flex-wrap:wrap;gap:6px}
+.roles button,.btn{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:5px;padding:7px 12px;cursor:pointer}
+.roles button[aria-pressed="true"]{background:var(--steel);color:var(--surface);border-color:var(--steel)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.danger{color:var(--red);border-color:var(--red);background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.zone:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.perm{font-size:.86rem;color:var(--muted);padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+.panes{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:0}
+@media (max-width:860px){.panes{grid-template-columns:1fr}}
+.pane{padding:16px;min-width:0}
+.pane+.pane{border-left:1px solid var(--line)}
+@media (max-width:860px){.pane+.pane{border-left:0;border-top:1px solid var(--line)}}
+
+/* sheet (lámina) */
+.sheet{border:2px dashed var(--line);border-radius:6px;padding:12px;background:var(--bg)}
+.sheet h3{font-size:1.05rem;text-transform:uppercase}
+svg.shovel{width:100%;height:auto;display:block;margin:6px 0}
+.zone{cursor:pointer}
+.zone .body{fill:var(--surface);stroke:var(--steel);stroke-width:2}
+.zone:hover .body,.zone.sel .body{fill:var(--accent)}
+.zone text{font-family:var(--mono);font-size:13px;fill:var(--ink);pointer-events:none}
+.zone .dot{fill:var(--red)}
+.qrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.qr{background:#fff;border:1px solid var(--line);border-radius:4px;padding:6px;text-align:center;cursor:pointer;color:#1c1f22}
+.qr:hover{border-color:var(--accent)}
+.qr canvas,.qr img{width:64px!important;height:64px!important;margin:0 auto;display:block}
+.qr span{font-family:var(--mono);font-size:.7rem;display:block;margin-top:4px}
+
+.phone{margin-top:14px;border:2px solid var(--steel);border-radius:18px;padding:12px;background:var(--surface);max-width:300px}
+.phone .top{font-family:var(--mono);font-size:.72rem;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:8px}
+.phone h3{font-size:1.05rem;text-transform:uppercase}
+.phone select{font:inherit;width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);margin:8px 0}
+.zlist{display:grid;gap:6px}
+.zlist button{font:inherit;font-size:.88rem;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:9px 10px;cursor:pointer}
+.zlist button:hover{border-color:var(--accent)}
+.canal{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--bg)}
+.kpi .v{font-family:var(--display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.kpi .l{font-size:.8rem;color:var(--muted)}
+.kpi.alert .v{color:var(--red)}
+
+.alerts{margin-top:12px;display:grid;gap:6px}
+.alertrow{border-left:4px solid var(--red);background:var(--bg);padding:8px 10px;border-radius:3px;font-size:.88rem}
+
+/* table */
+.tablewrap{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:780px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-family:var(--mono);font-weight:500;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--bg)}
+td.num{white-space:nowrap;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--bg)}
+.sev{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.sev i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.sev.rojo i{background:var(--red)} .sev.amarillo i{background:var(--amber)} .sev.verde i{background:var(--green)}
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.78rem;font-weight:600;border:1px solid currentColor;white-space:nowrap}
+.st-Abierto{color:var(--red)} .st-En{color:var(--amber)} .st-Por{color:var(--steel)} .st-Cerrado{color:var(--green)} .st-Anulado{color:var(--grey)}
+.late{color:var(--red);font-weight:600}
+
+.zbars{display:grid;gap:5px;margin-top:10px}
+.zbar{display:grid;grid-template-columns:110px 1fr 24px;gap:8px;align-items:center;font-size:.8rem}
+.zbar .t{height:10px;background:var(--line);border-radius:2px;overflow:hidden}
+.zbar .f{height:100%;background:var(--steel)}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(10,12,14,.55);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:20}
+.overlay.open{display:flex}
+.modal{background:var(--surface);color:var(--ink);border-radius:8px;max-width:560px;width:100%;padding:20px;border-top:6px solid var(--accent)}
+.modal .head{display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:12px}
+.field{display:grid;gap:4px;margin-bottom:12px}
+.field label{font-size:.82rem;font-weight:600}
+.field input,.field select,.field textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
+.sevpick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sevpick label{border:1px solid var(--line);border-radius:5px;padding:8px;text-align:center;cursor:pointer;font-weight:600;font-size:.85rem}
+.sevpick input{position:absolute;opacity:0}
+.sevpick input:checked+span{text-decoration:underline;text-underline-offset:4px}
+.sevpick label:has(input:checked){border-width:2px}
+.sevpick .r{color:var(--red)} .sevpick .a{color:var(--amber)} .sevpick .g{color:var(--green)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:8px}
+.log{font-family:var(--mono);font-size:.75rem;background:var(--bg);border-radius:4px;padding:10px;display:grid;gap:4px;max-height:180px;overflow:auto}
+.photos{display:flex;gap:10px;flex-wrap:wrap}
+.ph{width:130px;height:96px;border:1px dashed var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--muted);overflow:hidden;text-align:center;padding:4px}
+.ph img{width:100%;height:100%;object-fit:cover}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--steel);color:var(--surface);padding:10px 16px;border-radius:6px;font-size:.9rem;display:none;z-index:30;max-width:90vw}
+
+/* value & roadmap */
+.vs{width:100%;border-collapse:collapse;min-width:560px}
+.vs td,.vs th{padding:10px;border-bottom:1px solid var(--line)}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.road div{padding:18px;background:var(--surface);border-right:1px solid var(--line)}
+.road div:last-child{border-right:0}
+.road div.now{background:var(--accent);color:var(--accent-ink)}
+.road .ph-n{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
+ul{margin:8px 0 0;padding-left:18px}
+footer{padding:28px 0 48px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap stack">
+    <div class="tag"><b>Pitch + demo</b> Taller de Innovación y Emprendimiento · Solemne 1</div>
+    <h1>MineInspect 360</h1>
+    <p class="lead">Que ningún hallazgo estructural de una pala se pierda entre que se detecta y se repara. Un QR, un formulario y una planilla con estados: trazabilidad completa por casi $0.</p>
+    <div class="meta">
+      <span class="chip">Piloto: Bucyrus 495 · PALA-01</span>
+      <span class="chip">Sin instalar software</span>
+      <span class="chip">2 canales: QR en oficina y celular</span>
+      <span class="chip">Integrantes: Benjamín Fuentes Robles · Kevin Rojas Luna</span>
+    </div>
+  </div>
+</header>
+
+<section id="problema">
+  <div class="wrap stack">
+    <div class="tag"><b>01</b> Problema</div>
+    <h2>Detectar la falla no es el problema. Seguirla sí.</h2>
+    <p>En la mantención de equipos mineros, los hallazgos estructurales (fisuras, deformaciones, soldaduras dañadas) se detectan, pero su seguimiento queda repartido entre papeles, mensajes de WhatsApp y conversaciones de cambio de turno. Nadie ve el ciclo completo, desde la detección hasta el cierre. Lo observamos de primera mano trabajando en mantención minera.</p>
+    <div class="flow" aria-label="Dónde se pierde hoy un hallazgo">
+      <div><span class="n">1 · Detección</span><h3>Inspector ve la fisura</h3><p class="loss">Se anota en papel o en un mensaje</p></div>
+      <div><span class="n">2 · Registro</span><h3>Reporte informal</h3><p class="loss">Sin foto estándar ni zona precisa</p></div>
+      <div><span class="n">3 · Seguimiento</span><h3>Cambio de turno</h3><p class="loss">El pendiente se diluye</p></div>
+      <div><span class="n">4 · Intervención</span><h3>Mantención repara</h3><p class="loss">No queda evidencia del antes y después</p></div>
+      <div><span class="n">5 · Cierre</span><h3>"Ya está listo"</h3><p class="loss">Cierre de palabra, sin validación</p></div>
+    </div>
+    <p class="muted small">Consecuencia: hallazgos críticos que siguen abiertos sin que nadie lo note, más riesgo de falla mayor y detención no programada, y poco respaldo ante auditorías.</p>
+  </div>
+</section>
+
+<section id="usuario">
+  <div class="wrap stack">
+    <div class="tag"><b>02</b> Usuarios</div>
+    <h2>Cuatro personas, un mismo hallazgo</h2>
+    <div class="grid3">
+      <div class="card stack"><h3>Inspector</h3><p class="small">Detecta y reporta. Trabaja con guantes, polvo y poco tiempo. Necesita reportar en menos de un minuto.</p></div>
+      <div class="card stack"><h3>Mecánico de mantención</h3><p class="small">Repara. Necesita saber qué, dónde y qué tan urgente, y dejar evidencia de su trabajo.</p></div>
+      <div class="card stack"><h3>Supervisor</h3><p class="small">Valida cierres y prioriza. Necesita ver qué está atrasado sin preguntar a cada turno.</p></div>
+      <div class="card stack"><h3>Jefatura y prevención</h3><p class="small">Consultan. Necesitan respaldo ante auditorías y datos para planificar la mantención preventiva.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="solucion">
+  <div class="wrap stack">
+    <div class="tag"><b>03</b> Solución · demo funcional</div>
+    <h2>Pruébalo: registra un hallazgo de la pala</h2>
+    <p>Hay dos formas de registrar, y ambas llegan a la misma planilla. En la oficina habrá un registro de QR con una lámina por pala, dividida por zonas. Además, cada técnico tiene un acceso directo en su celular para registrar en el mismo turno. Nadie tiene que volver al equipo para escanear. Elige un rol, registra un hallazgo por cualquiera de los dos canales y síguelo hasta su cierre. <span class="muted">Datos de ejemplo, ficticios.</span></p>
+
+    <div class="console">
+      <div class="bar">
+        <div class="roles" role="group" aria-label="Rol activo">
+          <button data-role="inspector" aria-pressed="true">Inspector</button>
+          <button data-role="mecanico" aria-pressed="false">Mecánico</button>
+          <button data-role="supervisor" aria-pressed="false">Supervisor</button>
+          <button data-role="jefatura" aria-pressed="false">Jefatura</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="small muted" id="today"></span>
+          <button class="btn" id="nextDay">Avanzar 1 día</button>
+        </div>
+      </div>
+      <div class="perm" id="perm"></div>
+      <div class="panes">
+        <div class="pane">
+          <div class="sheet">
+            <h3>Registro QR · Bucyrus 495 · PALA-01</h3>
+            <svg class="shovel" viewBox="0 0 420 300" role="img" aria-label="Esquema de pala dividido en 7 zonas">
+              <g class="zone" data-z="Z1" tabindex="0" role="button" aria-label="Z1 Balde">
+                <path class="body" d="M318 150 l70 -6 l14 48 l-30 34 l-58 -14 z"/><text x="338" y="190">Z1</text></g>
+              <g class="zone" data-z="Z2" tabindex="0" role="button" aria-label="Z2 Brazo o mango">
+                <path class="body" d="M228 118 l100 26 l-6 18 l-100 -26 z"/><text x="262" y="138">Z2</text></g>
+              <g class="zone" data-z="Z3" tabindex="0" role="button" aria-label="Z3 Pluma">
+                <path class="body" d="M196 150 l130 -118 l14 14 l-128 122 z"/><text x="262" y="92">Z3</text></g>
+              <g class="zone" data-z="Z4" tabindex="0" role="button" aria-label="Z4 Sala de máquinas">
+                <rect class="body" x="40" y="128" width="170" height="66" rx="3"/><text x="96" y="166">Z4</text></g>
+              <g class="zone" data-z="Z5" tabindex="0" role="button" aria-label="Z5 Cabina, escalas y pasarelas">
+                <rect class="body" x="150" y="92" width="50" height="36" rx="3"/><text x="160" y="115">Z5</text></g>
+              <g class="zone" data-z="Z6" tabindex="0" role="button" aria-label="Z6 Chasis inferior y tornamesa">
+                <rect class="body" x="60" y="194" width="160" height="26" rx="2"/><text x="126" y="212">Z6</text></g>
+              <g class="zone" data-z="Z7" tabindex="0" role="button" aria-label="Z7 Orugas">
+                <rect class="body" x="30" y="220" width="220" height="44" rx="22"/><text x="128" y="247">Z7</text></g>
+              <g id="dots"></g>
+            </svg>
+            <div class="qrs" id="qrs"></div>
+            <p class="small muted" style="margin-top:8px">Canal 1 · Lámina de la Bucyrus 495 (PALA-01) en la oficina. Al publicar esta página, cada QR abrirá esta demostración con la zona seleccionada; no reemplaza todavía al formulario real de Google Forms. Los puntos rojos marcan hallazgos abiertos.</p>
+          </div>
+          <div class="phone" aria-label="Acceso directo en el celular del técnico">
+            <div class="top"><span>Canal 2 · Celular del técnico</span><span>MI360</span></div>
+            <h3>Registrar hallazgo</h3>
+            <label for="pPala" class="small" style="font-weight:600">Equipo</label>
+            <select id="pPala"><option>PALA-01</option></select>
+            <div class="zlist" id="zlist"></div>
+            <p class="small muted" style="margin-top:8px">Acceso directo guardado en la pantalla de inicio. Abre el mismo formulario que el QR.</p>
+          </div>
+        </div>
+        <div class="pane">
+          <div class="kpis">
+            <div class="kpi"><div class="v" id="kAbiertos">0</div><div class="l">Hallazgos activos</div></div>
+            <div class="kpi alert"><div class="v" id="kVencidos">0</div><div class="l">Fuera de plazo</div></div>
+            <div class="kpi"><div class="v" id="kValidar">0</div><div class="l">Por validar</div></div>
+            <div class="kpi"><div class="v" id="kCerrados">0</div><div class="l">Cerrados con evidencia</div></div>
+          </div>
+          <div class="alerts" id="alerts"></div>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>ID</th><th>Zona</th><th>Hallazgo</th><th>Criticidad</th><th>Estado</th><th>Días</th><th>Plazo</th><th>Canal</th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <p class="small muted" style="margin-top:8px">Toca una fila para ver la ficha, el historial de cambios y las acciones permitidas para tu rol.</p>
+          <div class="zbars" id="zbars" aria-label="Hallazgos por zona"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="valor">
+  <div class="wrap stack">
+    <div class="tag"><b>04</b> Valor</div>
+    <h2>Lo mismo que un sistema caro, en lo esencial</h2>
+    <div class="tablewrap" style="margin-top:0">
+      <table class="vs">
+        <thead><tr><th></th><th>Hoy (papel / WhatsApp)</th><th>Software de mantención</th><th>MineInspect 360 (piloto)</th></tr></thead>
+        <tbody>
+          <tr><td><b>Costo</b></td><td>Bajo</td><td>Alto: licencias e implementación</td><td>Casi $0: herramientas gratuitas y QR impresos</td></tr>
+          <tr><td><b>Puesta en marcha</b></td><td>Inmediata</td><td>Meses, pasa por TI</td><td>Días, sin TI</td></tr>
+          <tr><td><b>Trazabilidad</b></td><td>Se pierde</td><td>Completa</td><td>Completa: ID, estado, plazo, historial</td></tr>
+          <tr><td><b>Evidencia</b></td><td>Ocasional</td><td>Variable</td><td>Foto obligatoria al detectar y al cerrar</td></tr>
+          <tr><td><b>Ubicación del hallazgo</b></td><td>Descripción libre</td><td>Por equipo</td><td>Por equipo y zona (QR por zona)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid3">
+      <div class="card"><h3>Nadie cierra su propio trabajo</h3><p class="small">El inspector reporta, el mecánico repara y el supervisor valida. Nada se borra: se anula con motivo y queda registrado.</p></div>
+      <div class="card"><h3>Plazo según criticidad</h3><p class="small">Rojo: 1 día. Amarillo: 7 días. Verde: próxima mantención (30 días). Lo atrasado se ve solo.</p></div>
+      <div class="card"><h3>Datos para prevenir</h3><p class="small">Con el tiempo, el conteo por zona muestra dónde se concentran las fallas de la pala.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="impacto">
+  <div class="wrap stack">
+    <div class="tag"><b>05</b> Impacto y proyección</div>
+    <h2>Partir con una pala, escalar con evidencia</h2>
+    <div class="road">
+      <div class="now"><span class="ph-n">Fase 1 · ahora</span><h3>Piloto en 1 pala</h3><ul class="small"><li>Registro de QR por zona en oficina</li><li>Acceso directo en el celular de los técnicos</li><li>Google Forms y Sheets</li><li>Validación con inspectores y mecánicos</li></ul></div>
+      <div><span class="ph-n">Fase 2</span><h3>App sin código</h3><ul class="small"><li>AppSheet con modo sin conexión</li><li>Roles por usuario</li><li>Más palas y camiones</li></ul></div>
+      <div><span class="ph-n">Fase 3 · visión</span><h3>Plataforma propia</h3><ul class="small"><li>Integración con sistemas de mantención</li><li>Analítica de fallas recurrentes</li><li>Oferta a contratistas y mineras</li></ul></div>
+    </div>
+    <div class="card stack">
+      <h3>Cómo mediremos el piloto</h3>
+      <ul class="small">
+        <li>Tiempo para reportar un hallazgo (meta: menos de 1 minuto).</li>
+        <li>Porcentaje de hallazgos cerrados con foto del antes y del después.</li>
+        <li>Hallazgos críticos fuera de plazo.</li>
+        <li>Intención de uso declarada por inspectores y mecánicos en la validación.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">MineInspect 360 · Prototipo de presentación. Funciona en este navegador: los datos son ficticios y no se guardan. En el piloto real el formulario es Google Forms y la tabla es Google Sheets.</div>
+</footer>
+
+<div class="overlay" id="ov" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" id="modal"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const ZONES={Z1:"Balde",Z2:"Brazo / mango",Z3:"Pluma",Z4:"Sala de máquinas",Z5:"Cabina, escalas y pasarelas",Z6:"Chasis inferior / tornamesa",Z7:"Orugas"};
+const TIPOS=["Fisura","Deformación","Soldadura dañada","Desgaste","Corrosión","Perno suelto o faltante","Otro"];
+const PLAZO={rojo:1,amarillo:7,verde:30};
+const ROLES={
+  inspector:{n:"Inspector",txt:"Puede reportar hallazgos con el QR de la oficina o desde su celular. No puede editar, cerrar ni borrar reportes."},
+  mecanico:{n:"Mecánico",txt:"Puede registrar hallazgos de su turno desde el celular u oficina, iniciar la reparación y registrar el cierre con foto. No puede validar su propio cierre."},
+  supervisor:{n:"Supervisor",txt:"Puede reportar, validar o rechazar cierres y anular un hallazgo con motivo. Nada se borra."},
+  jefatura:{n:"Jefatura",txt:"Solo lectura: ve el panel, las alertas y el historial."}
+};
+let role="inspector", today=12, seq=0;
+const data=[];
+function add(z,tipo,crit,desc,dia,estado,by,canal){
+  canal=canal||"Oficina";
+  const id="H-"+String(++seq).padStart(3,"0");
+  const r={id,z,tipo,crit,desc,dia,canal,estado:"Abierto",antes:null,despues:null,log:[`Día ${dia} · ${by||"Inspector"}: reporta (${crit}) desde ${canal==="Celular"?"su celular":"el QR de oficina"}`],cerradoDia:null};
+  if(estado){r.estado=estado; if(estado!=="Abierto") r.log.push(`Día ${dia+1} · Mecánico: inicia reparación`);
+    if(estado==="Por validar"||estado==="Cerrado") r.log.push(`Día ${dia+2} · Mecánico: registra reparación con foto`);
+    if(estado==="Cerrado"){r.log.push(`Día ${dia+3} · Supervisor: valida cierre`);r.cerradoDia=dia+3;}}
+  data.push(r);return r;
+}
+add("Z1","Fisura","rojo","Fisura de ~8 cm en labio del balde, lado izquierdo",11,"Abierto");
+add("Z3","Soldadura dañada","amarillo","Cordón de soldadura agrietado en unión inferior de pluma",6,"En reparación","Mecánico","Celular");
+add("Z7","Perno suelto o faltante","amarillo","Dos pernos de zapata sueltos, oruga derecha",8,"Por validar");
+add("Z4","Corrosión","verde","Corrosión superficial en pasamanos de sala de máquinas",2,"Abierto");
+add("Z1","Desgaste","amarillo","Desgaste de dientes sobre lo normal",1,"Cerrado");
+add("Z6","Deformación","rojo","Deformación en placa de tornamesa tras impacto",9,"Cerrado","Inspector","Celular");
+add("Z5","Otro","verde","Peldaño de escala de acceso doblado",3,"Abierto","Inspector","Celular");
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const activo=r=>r.estado!=="Cerrado"&&r.estado!=="Anulado";
+const dias=r=>(r.cerradoDia??today)-r.dia;
+const vencido=r=>activo(r)&&dias(r)>PLAZO[r.crit];
+const stc=e=>"st-"+e.split(" ")[0];
+
+function toast(t){const el=$("#toast");el.textContent=t;el.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>el.style.display="none",2600);}
+
+function render(){
+  $("#today").textContent="Día simulado: "+today;
+  $("#perm").innerHTML="<b>"+ROLES[role].n+":</b> "+ROLES[role].txt;
+  document.querySelectorAll(".roles button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.role===role));
+  $("#kAbiertos").textContent=data.filter(activo).length;
+  $("#kVencidos").textContent=data.filter(vencido).length;
+  $("#kValidar").textContent=data.filter(r=>r.estado==="Por validar").length;
+  $("#kCerrados").textContent=data.filter(r=>r.estado==="Cerrado").length;
+  const al=data.filter(vencido);
+  $("#alerts").innerHTML=al.map(r=>`<div class="alertrow"><b>Alerta simulada para el supervisor:</b> ${r.id} (${esc(ZONES[r.z])}) lleva ${dias(r)} días abierto; su plazo era ${PLAZO[r.crit]} ${PLAZO[r.crit]===1?"día":"días"}.</div>`).join("");
+  const order={"Abierto":0,"En reparación":1,"Por validar":2,"Cerrado":3,"Anulado":4};
+  const rows=[...data].sort((a,b)=>(vencido(b)-vencido(a))||order[a.estado]-order[b.estado]||b.dia-a.dia);
+  $("#rows").innerHTML=rows.map(r=>`<tr class="row" tabindex="0" data-id="${r.id}">
+    <td class="num">${r.id}</td><td>${r.z} · ${esc(ZONES[r.z])}</td><td>${esc(r.tipo)}</td>
+    <td><span class="sev ${r.crit}"><i></i>${r.crit[0].toUpperCase()+r.crit.slice(1)}</span></td>
+    <td><span class="pill ${stc(r.estado)}">${r.estado}</span></td>
+    <td class="num ${vencido(r)?"late":""}">${dias(r)}</td>
+    <td class="num ${vencido(r)?"late":""}">${PLAZO[r.crit]} d${vencido(r)?" ⚠":""}</td><td class="canal">${r.canal}</td></tr>`).join("");
+  document.querySelectorAll("tr.row").forEach(tr=>{tr.onclick=()=>ficha(tr.dataset.id);tr.onkeydown=e=>{if(e.key==="Enter")ficha(tr.dataset.id)};});
+  // dots on shovel
+  const pos={Z1:[360,170],Z2:[300,132],Z3:[300,62],Z4:[190,140],Z5:[192,100],Z6:[205,207],Z7:[236,236]};
+  const cnt={};data.filter(activo).forEach(r=>cnt[r.z]=(cnt[r.z]||0)+1);
+  $("#dots").innerHTML=Object.entries(cnt).map(([z,n])=>`<g><circle class="dot" cx="${pos[z][0]}" cy="${pos[z][1]}" r="9" style="fill:var(--red)"/><text x="${pos[z][0]}" y="${pos[z][1]+4}" text-anchor="middle" style="font:600 11px var(--mono);fill:#fff;pointer-events:none">${n}</text></g>`).join("");
+  // zone bars (all history)
+  const all={};data.filter(r=>r.estado!=="Anulado").forEach(r=>all[r.z]=(all[r.z]||0)+1);
+  const mx=Math.max(1,...Object.values(all));
+  $("#zbars").innerHTML='<div class="small" style="font-weight:600;margin-top:6px">Hallazgos por zona (histórico del piloto)</div>'+Object.keys(ZONES).map(z=>`<div class="zbar"><span>${z} ${esc(ZONES[z].split(/[ ,]/)[0])}</span><div class="t"><div class="f" style="width:${(all[z]||0)/mx*100}%"></div></div><span class="num">${all[z]||0}</span></div>`).join("");
+}
+
+function openM(html){$("#modal").innerHTML=html;$("#ov").classList.add("open");$("#ov").setAttribute("aria-hidden","false");const f=$("#modal").querySelector("input,select,textarea,button");f&&f.focus();}
+function closeM(){$("#ov").classList.remove("open");$("#ov").setAttribute("aria-hidden","true");}
+$("#ov").addEventListener("click",e=>{if(e.target.id==="ov")closeM();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeM();});
+const photoURL=f=>f?URL.createObjectURL(f):null;
+
+function scan(z,canal){
+  canal=canal||"Oficina";
+  document.querySelectorAll(".zone").forEach(g=>g.classList.toggle("sel",g.dataset.z===z));
+  if(role==="jefatura"){toast("Jefatura es solo lectura. Cambia a Inspector o Mecánico para registrar.");return;}
+  openM(`<div class="head"><div><div class="tag">${canal==="Celular"?"Acceso directo en el celular":"QR de oficina escaneado"} · PALA-01 | ${z}</div><h3 id="mTitle">Reportar hallazgo · ${esc(ZONES[z])}</h3></div><button class="btn" onclick="closeM()">Cancelar</button></div>
+  <form id="fRep">
+    <div class="field"><label>Equipo y zona (cargados automáticamente)</label><input id="fEq" value="PALA-01 · ${z} ${esc(ZONES[z])}" readonly></div>
+    <div class="field"><label for="fTipo">Tipo de hallazgo</label><select id="fTipo">${TIPOS.map(t=>`<option>${t}</option>`).join("")}</select></div>
+    <div class="field"><span style="font-size:.82rem;font-weight:600">Criticidad</span><div class="sevpick">
+      <label class="r"><input type="radio" name="crit" id="cR" value="rojo"><span>Rojo · 1 día</span></label>
+      <label class="a"><input type="radio" name="crit" id="cA" value="amarillo" checked><span>Amarillo · 7 días</span></label>
+      <label class="g"><input type="radio" name="crit" id="cV" value="verde"><span>Verde · 30 días</span></label></div></div>
+    <div class="field"><label for="fDesc">Descripción breve</label><textarea id="fDesc" rows="2" placeholder="Ej.: fisura de 5 cm en unión soldada" required></textarea></div>
+    <div class="field"><label for="fFoto">Foto del hallazgo (tomada en terreno)</label><input type="file" id="fFoto" accept="image/*"><span class="small muted">En esta demostración es opcional; en el piloto real debe ser obligatoria.</span></div>
+    <div class="actions"><button class="btn primary" type="submit">Enviar reporte</button></div>
+  </form>`);
+  $("#fRep").onsubmit=e=>{e.preventDefault();
+    const r=add(z,$("#fTipo").value,document.querySelector('input[name=crit]:checked').value,$("#fDesc").value.trim()||"Sin descripción",today,null,ROLES[role].n,canal);
+    r.antes=photoURL($("#fFoto").files[0]);closeM();render();toast(r.id+" registrado. Queda Abierto y visible para mantención.");};
+}
+
+function ficha(id){
+  const r=data.find(x=>x.id===id);
+  let acts="";
+  if(role==="mecanico"&&r.estado==="Abierto") acts+=`<button class="btn primary" onclick="act('${id}','iniciar')">Iniciar reparación</button>`;
+  if(role==="mecanico"&&r.estado==="En reparación") acts+=`<button class="btn primary" onclick="act('${id}','reparar')">Registrar reparación con foto</button>`;
+  if(role==="supervisor"&&r.estado==="Por validar") acts+=`<button class="btn" onclick="act('${id}','rechazar')">Rechazar cierre</button><button class="btn primary" onclick="act('${id}','validar')">Validar cierre</button>`;
+  if(role==="supervisor"&&activo(r)) acts+=`<button class="btn danger" onclick="act('${id}','anular')">Anular con motivo</button>`;
+  if(!acts) acts=`<span class="small muted">Tu rol (${ROLES[role].n}) no tiene acciones sobre este hallazgo en estado "${r.estado}".</span>`;
+  openM(`<div class="head"><div><div class="tag">${r.id} · PALA-01 · ${r.z} · vía ${r.canal.toLowerCase()}</div><h3 id="mTitle">${esc(r.tipo)} · ${esc(ZONES[r.z])}</h3></div><button class="btn" onclick="closeM()">Cerrar</button></div>
+  <div class="stack">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span class="sev ${r.crit}"><i></i>${r.crit}</span><span class="pill ${stc(r.estado)}">${r.estado}</span><span class="small ${vencido(r)?"late":"muted"}">${dias(r)} días · plazo ${PLAZO[r.crit]} d${vencido(r)?" · vencido":""}</span></div>
+    <p>${esc(r.desc)}</p>
+    <div class="photos"><div class="ph">${r.antes?`<img src="${r.antes}" alt="Foto del hallazgo">`:"Foto antes<br>(ejemplo)"}</div><div class="ph">${r.despues?`<img src="${r.despues}" alt="Foto de la reparación">`:(r.estado==="Cerrado"||r.estado==="Por validar"?"Foto después<br>(ejemplo)":"Foto después<br>pendiente")}</div></div>
+    <div><div class="small" style="font-weight:600;margin-bottom:4px">Historial (no se puede borrar)</div><div class="log">${r.log.map(l=>`<div>${esc(l)}</div>`).join("")}</div></div>
+    <div id="extra"></div>
+    <div class="actions">${acts}</div>
+  </div>`);
+}
+
+window.closeM=closeM;
+window.act=function(id,a){
+  const r=data.find(x=>x.id===id), who=ROLES[role].n;
+  if(a==="iniciar"){r.estado="En reparación";r.log.push(`Día ${today} · ${who}: inicia reparación`);finish(r,"Reparación iniciada.");}
+  if(a==="validar"){r.estado="Cerrado";r.cerradoDia=today;r.log.push(`Día ${today} · ${who}: valida cierre con foto antes/después`);finish(r,r.id+" cerrado con evidencia.");}
+  if(a==="reparar"||a==="rechazar"||a==="anular"){
+    const cfg={reparar:["Foto de la reparación y nota","Ej.: se resoldó y esmeriló la unión",true],rechazar:["Motivo del rechazo","Ej.: la foto no muestra la zona reparada",false],anular:["Motivo de anulación","Ej.: hallazgo duplicado de H-001",false]}[a];
+    $("#extra").innerHTML=`<form id="fx" class="card" style="background:var(--bg)">
+      ${cfg[2]?'<div class="field"><label for="xFoto">Foto después</label><input type="file" id="xFoto" accept="image/*"></div>':""}
+      <div class="field"><label for="xTxt">${cfg[0]}</label><textarea id="xTxt" rows="2" placeholder="${cfg[1]}" required></textarea></div>
+      <div class="actions"><button class="btn primary" type="submit">Confirmar</button></div></form>`;
+    $("#xTxt").focus();
+    $("#fx").onsubmit=e=>{e.preventDefault();const t=$("#xTxt").value.trim();
+      if(a==="reparar"){r.despues=photoURL($("#xFoto").files[0]);r.estado="Por validar";r.log.push(`Día ${today} · ${who}: registra reparación con foto. "${t}"`);finish(r,"Enviado al supervisor para validar.");}
+      if(a==="rechazar"){r.estado="En reparación";r.log.push(`Día ${today} · ${who}: rechaza cierre. "${t}"`);finish(r,"Cierre rechazado; vuelve a mantención.");}
+      if(a==="anular"){r.estado="Anulado";r.cerradoDia=today;r.log.push(`Día ${today} · ${who}: anula. "${t}"`);finish(r,r.id+" anulado. Sigue en el historial.");}
+    };
+  }
+};
+function finish(r,msg){closeM();render();toast(msg);}
+
+document.querySelectorAll(".roles button").forEach(b=>b.onclick=()=>{role=b.dataset.role;render();toast("Rol activo: "+ROLES[role].n);});
+$("#nextDay").onclick=()=>{today++;render();const n=data.filter(vencido).length;toast("Día "+today+". "+(n?n+" hallazgo(s) fuera de plazo.":"Sin hallazgos fuera de plazo."));};
+document.querySelectorAll(".zone").forEach(g=>{g.onclick=()=>scan(g.dataset.z);g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();scan(g.dataset.z);}};});
+
+// QR codes per zone
+const qwrap=$("#qrs");
+Object.keys(ZONES).forEach(z=>{
+  const d=document.createElement("button");d.className="qr";d.type="button";d.setAttribute("aria-label","Escanear QR de "+z+" "+ZONES[z]);
+  const box=document.createElement("div");d.appendChild(box);
+  const s=document.createElement("span");s.textContent=z+" · "+ZONES[z].split(/[ ,]/)[0];d.appendChild(s);
+   // Al publicarse, el QR apunta a la misma demo con una zona precargada.
+   // El prototipo no envía reportes a un servidor; los datos son ficticios.
+   const u = new URL(window.location.href);
+   u.search = "";
+   u.hash = "";
+   u.searchParams.set("zona", z);
+   try{new QRCode(box,{text:u.href,width:128,height:128,correctLevel:QRCode.CorrectLevel.M});}catch(e){box.textContent="QR";box.style.cssText="width:64px;height:64px;margin:auto;display:flex;align-items:center;justify-content:center;border:2px solid #1c1f22;font-family:monospace";}
+  d.onclick=()=>scan(z);qwrap.appendChild(d);
+});
+// phone channel
+const zl=$("#zlist");
+Object.keys(ZONES).forEach(z=>{const b=document.createElement("button");b.type="button";b.textContent=z+" · "+ZONES[z];b.onclick=()=>scan(z,"Celular");zl.appendChild(b);});
+render();
+// Si el profesor escanea un QR desde otro dispositivo, abre el simulador
+// con el equipo y la zona precargados. Sin conexión, esta URL no es pública.
+const zonaInicial = new URLSearchParams(window.location.search).get("zona");
+if(zonaInicial && Object.prototype.hasOwnProperty.call(ZONES, zonaInicial)) {
+  scan(zonaInicial, "Oficina");
+}
+</script>
+</body>
+</html>
